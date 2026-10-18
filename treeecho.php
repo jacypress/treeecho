@@ -307,7 +307,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
         /* ============ Exclude panel styles ============ */
         .exclude-panel {
             margin-top: 2.5rem;
-            border-top: 1px solid rgb(255 255 255 / .15);
             padding-top: 1.25rem;
         }
 
