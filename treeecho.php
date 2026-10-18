@@ -360,7 +360,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
             font-size: .82rem;
             color: rgb(242 242 242 / .9);
             cursor: pointer;
-            border-radius: 3px;
             user-select: none;
             white-space: nowrap;
             overflow: hidden;
