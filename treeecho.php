@@ -69,7 +69,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
         ::selection { background-color: rgb(0 96 255); color: white; }
 
         html {
-            /* Prevent the body from ever growing wider than the viewport */
             max-width: 100%;
         }
 
@@ -79,8 +78,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
             color:rgb(242 242 242);
             line-height:1.4;
             max-width: 100%;
-            /* overflow-x: clip (NOT hidden) – doesn't create a scroll container,
-               so position: sticky on descendants still works. */
             overflow-x: clip;
         }
 
@@ -107,6 +104,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
             padding: 2rem 2.5rem;
             min-width: 0;
             width: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Left container */
@@ -157,7 +156,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
                 position: sticky;
                 top: 0;
                 align-self: start;
-                height: fit-content;
+                height: 100vh;
+                overflow-y: auto;
+                box-sizing: border-box;
             }
         }
 
@@ -173,6 +174,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
 
             .structure-output {
                 font-size: .9rem;
+            }
+
+            .exclude-list {
+                max-height: 260px;
+                flex: 0 0 auto;
             }
         }
 
@@ -272,7 +278,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
         }
 
         /* Info box */
-        .info-box {
+        .info-box { 
             display: none;
             color: white;
             font-size: .9rem;
@@ -308,6 +314,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
         .exclude-panel {
             margin-top: 2.5rem;
             padding-top: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
         }
 
         .exclude-panel h2 {
@@ -325,7 +335,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
         }
 
         .exclude-list {
-            max-height: 260px;
             overflow-y: auto;
             padding-right: .5rem;
             display: flex;
@@ -333,6 +342,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
             gap: .15rem;
             scrollbar-width: thin;
             scrollbar-color: rgb(255 255 255 / .2) transparent;
+            flex: 1 1 auto;
+            min-height: 0;
         }
 
         .exclude-list::-webkit-scrollbar { width: 6px; }
@@ -349,6 +360,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
             font-size: .82rem;
             color: rgb(242 242 242 / .9);
             cursor: pointer;
+            border-radius: 3px;
             user-select: none;
             white-space: nowrap;
             overflow: hidden;
