@@ -68,26 +68,44 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
 
         ::selection { background-color: rgb(0 96 255); color: white; }
 
+        html {
+            /* Prevent the body from ever growing wider than the viewport */
+            max-width: 100%;
+        }
+
         body {
             font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-            background:rgb(28 28 28); color:rgb(242 242 242);
+            background:rgb(18 18 18); 
+            color:rgb(242 242 242);
             line-height:1.4;
+            max-width: 100%;
+            /* overflow-x: clip (NOT hidden) – doesn't create a scroll container,
+               so position: sticky on descendants still works. */
+            overflow-x: clip;
         }
 
         /* Main responsive container */
         .main-container {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
             gap: 2rem;
             max-width: 1400px;
             margin: 0 auto;
             width: 100%;
+            min-width: 0;
+        }
+
+        /* Grid child containing the tree – must be allowed to shrink */
+        main {
+            min-width: 0;
+            max-width: 100%;
+            overflow: hidden;
         }
 
         /* Right sidebar (controls + info) */
         .sidebar {
             padding: 2rem 2.5rem;
-            min-width: 0; 
+            min-width: 0;
             width: 100%;
         }
 
@@ -96,24 +114,39 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
             background: transparent;
             border-radius: 8px;
             padding: 2.5rem;
-            min-width: 0; 
+            min-width: 0;
+            max-width: 100%;
             width: 100%;
             box-sizing: border-box;
+            overflow: hidden;
         }
 
-        /* ASCII tree output */
+        /* ASCII tree output – clipped, JS applies per-line ellipsis */
         .structure-output {
             font-size: 1rem;
-            white-space: pre;
             line-height: 1.6;
             min-height: 200px;
             user-select: text;
             font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-            overflow-x: auto;
+
+            white-space: pre;
+            overflow: hidden;
+
             display: block;
-            width: fit-content;
-            min-width: 100%;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
             box-sizing: border-box;
+        }
+
+        /* Hidden probe for measuring character width */
+        .measure-probe {
+            position: absolute;
+            visibility: hidden;
+            white-space: pre;
+            pointer-events: none;
+            top: -9999px;
+            left: -9999px;
         }
 
         @media (min-width: 900px) {
@@ -133,11 +166,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
             .main-container {
                 gap: 1rem;
             }
-        
+
             .sidebar {
-                position: static; 
+                position: static;
             }
-        
+
             .structure-output {
                 font-size: .9rem;
             }
@@ -166,10 +199,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
         }
 
         .controls button {
-            flex: 1 1 auto; 
-            min-width: 120px; 
+            flex: 1 1 auto;
+            min-width: 120px;
         }
-    
+
         #refreshBtn::before {
             content: '↻';
             font-size: 1.2rem;
@@ -195,56 +228,53 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
             justify-content: center;
             align-items: center;
         }
-    
-        button.copy-btn { 
-            background: white; 
-            color: black; 
+
+        button.copy-btn {
+            background: white;
+            color: black;
         }
-    
-        button:hover, 
-        button.copy-btn:hover { 
-            background: rgb(0 96 255); 
-            color: white; 
-            border-color: rgb(0 96 255); 
+
+        button:hover,
+        button.copy-btn:hover {
+            opacity: .9;
         }
-    
-        button.copy-btn.copied {  
-            background: rgb(0 96 255); 
-            color: white; 
+
+        button.copy-btn.copied {
+            background: rgb(0 96 255);
+            color: white;
             border-color: rgb(0 96 255);
         }
-    
-        @keyframes pulse { 
-            0%,100% { transform:scale(1); } 
-            50% { transform:scale(1.05); } 
+
+        @keyframes pulse {
+            0%,100% { transform:scale(1); }
+            50% { transform:scale(1.05); }
         }
 
         /* Structure output highlight */
         #structureOutput.highlight-copied.flash {
-            color: rgb(128 192 255);  
+            color: rgb(128 192 255);
             transition: none;
         }
-    
-        .current { 
-            color: rgb(173 181 189); 
+
+        .current {
+            color: rgb(173 181 189);
         }
-    
-        .path-info { 
-            color: rgb(255 255 255 / .85); 
-            font-size: 1rem; 
-            margin-bottom: 1.5rem; 
+
+        .path-info {
+            color: rgb(255 255 255 / .85);
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
         }
-    
-        .stats { 
-            color: rgb(173 181 189); 
-            margin-top: 1.5rem; 
+
+        .stats {
+            color: rgb(173 181 189);
+            margin-top: 1.5rem;
         }
 
         /* Info box */
         .info-box {
+            display: none;
             color: white;
-            background: rgb(0 96 255 / .5);
-            padding: 1rem;
             font-size: .9rem;
             margin-top: 2.5rem;
         }
@@ -256,49 +286,132 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
             border-radius: 4px;
             border-left: 4px solid rgb(255 107 107);
         }
-    
-        .loading { 
-            color: rgb(255 255 255 / .85); 
-            font-style: italic; 
-        }
-    
-        a { 
-            display: inline-block; 
-            margin-top: 30px; 
-            color: rgb(173 181 189); 
-            text-decoration: none; 
-        }
-    
-        a:hover { 
-            color: rgb(255 255 255); 
-            text-decoration: none; 
+
+        .loading {
+            color: rgb(255 255 255 / .85);
+            font-style: italic;
         }
 
-        /* Scrollbar styling for structure output */
-        .structure-output::-webkit-scrollbar {
-            height: 8px;
-            background: transparent;
+        a {
+            display: inline-block;
+            margin-top: 30px;
+            color: rgb(173 181 189);
+            text-decoration: none;
         }
 
-        .structure-output::-webkit-scrollbar-track {
-            background: rgb(255 255 255 / .05);
-            border-radius: 4px;
+        a:hover {
+            color: rgb(255 255 255);
+            text-decoration: none;
         }
 
-        .structure-output::-webkit-scrollbar-thumb {
-            background: rgb(255 255 255 / .2);
-            border-radius: 4px;
-            transition: background .1s;
+        /* ============ Exclude panel styles ============ */
+        .exclude-panel {
+            margin-top: 2.5rem;
+            border-top: 1px solid rgb(255 255 255 / .15);
+            padding-top: 1.25rem;
         }
 
-        .structure-output::-webkit-scrollbar-thumb:hover {
-            background: rgb(255 255 255 / .4);
+        .exclude-panel h2 {
+            font-size: .95rem;
+            font-weight: 600;
+            color: rgb(255 255 255 / .9);
+            margin-bottom: .35rem;
+            letter-spacing: .02em;
         }
 
-        /* Firefox scrollbar */
-        .structure-output {
+        .exclude-hint {
+            font-size: .78rem;
+            color: rgb(173 181 189);
+            margin-bottom: .9rem;
+        }
+
+        .exclude-list {
+            max-height: 260px;
+            overflow-y: auto;
+            padding-right: .5rem;
+            display: flex;
+            flex-direction: column;
+            gap: .15rem;
             scrollbar-width: thin;
-            scrollbar-color: rgb(255 255 255 / .2) rgb(255 255 255 / .05);
+            scrollbar-color: rgb(255 255 255 / .2) transparent;
+        }
+
+        .exclude-list::-webkit-scrollbar { width: 6px; }
+        .exclude-list::-webkit-scrollbar-thumb {
+            background: rgb(255 255 255 / .2);
+            border-radius: 3px;
+        }
+
+        .exclude-item {
+            display: flex;
+            align-items: center;
+            gap: .55rem;
+            padding: .28rem .35rem;
+            font-size: .82rem;
+            color: rgb(242 242 242 / .9);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .exclude-item:hover {
+            background: rgb(255 255 255 / .07);
+        }
+
+        .exclude-item input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+            border: 2px solid rgb(255 255 255 / .5);
+            border-radius: 0;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            transition: background .12s, border-color .12s;
+        }
+
+        .exclude-item input[type="checkbox"]:checked {
+            background: rgb(0 96 255);
+            border-color: rgb(0 96 255);
+        }
+
+        .exclude-item input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        /* Indent nested directories visually */
+        .exclude-item .depth-pad {
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .exclude-item .folder-icon {
+            color: rgb(255 255 255);
+            flex-shrink: 0;
+        }
+
+        .exclude-item .label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .exclude-empty {
+            font-size: .8rem;
+            color: rgb(173 181 189);
+            font-style: italic;
         }
 
         /* Small mobile adjustments */
@@ -306,23 +419,18 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
             body {
                 padding: 10px;
             }
-        
+
             .structure-container, .sidebar {
                 padding: 1rem;
             }
-        
+
             .controls button {
-                min-width: 100%; 
+                min-width: 100%;
             }
-        
+
             .header h1 {
                 font-size: 1.5rem;
                 margin-bottom: 20px;
-            }
-
-            /* Smaller scrollbar on mobile */
-            .structure-output::-webkit-scrollbar {
-                height: 4px;
             }
         }
     </style>
@@ -353,26 +461,52 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
                 Compatible with Markdown code blocks. Refresh after file changes.
             </div>
 
+            <!-- Exclude panel -->
+            <div class="exclude-panel">
+                <h2>Exclude folders</h2>
+                <div class="exclude-hint">Check to hide a folder and its contents from the tree and copy output.</div>
+                <div id="excludeList" class="exclude-list">
+                    <div class="exclude-empty">Loading…</div>
+                </div>
+            </div>
+
             <p class="credit"><a href="https://github.com/jacypress/treeecho" target="_blank">github.com/jacypress/treeecho</a></p>
         </aside>
     </div>
 
+    <!-- Hidden probe used to measure monospace char width -->
+    <span id="measureProbe" class="measure-probe" aria-hidden="true">XXXXXXXXXXXXXXXXXXXX</span>
+
     <script>
-        // Your existing JavaScript – unchanged
         class FolderStructure {
             constructor() {
-                this.flatList = [];
+                this.rawList = [];
+                this.visibleList = [];
+                this.excluded = new Set();
                 this.tree = null;
+                this.rootName = 'root';
+                this.fullText = '';
                 this.outputEl = document.getElementById('structureOutput');
                 this.statsEl = document.getElementById('stats');
                 this.pathEl = document.getElementById('currentPath');
+                this.excludeListEl = document.getElementById('excludeList');
+                this.probeEl = document.getElementById('measureProbe');
+                this.resizeTimer = null;
                 this.init();
             }
+
             async init() {
                 document.getElementById('refreshBtn').onclick = () => this.loadStructure();
                 document.getElementById('copyBtn').onclick = () => this.copyToClipboard();
+
+                window.addEventListener('resize', () => {
+                    clearTimeout(this.resizeTimer);
+                    this.resizeTimer = setTimeout(() => this.fitToWidth(), 100);
+                });
+
                 await this.loadStructure();
             }
+
             async loadStructure() {
                 this.showLoading();
                 try {
@@ -381,15 +515,96 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
                     const res = await fetch(url);
                     const data = await res.json();
                     if (!data.success) throw new Error(data.error || 'Failed to load');
-                    this.flatList = data.files;
-                    this.tree = this.buildTree(data.files);
-                    this.render(data.root || 'root');
+
+                    this.rawList = data.files;
+
+                    const dirSet = new Set(this.rawList.filter(p => p.endsWith('/')));
+                    for (const ex of [...this.excluded]) {
+                        if (!dirSet.has(ex)) this.excluded.delete(ex);
+                    }
+
+                    this.rootName = data.root || 'root';
+                    this.buildExcludeUI();
+                    this.recomputeVisible();
+                    this.render(this.rootName);
                     this.updateStats();
                     this.pathEl.textContent = data.path;
                 } catch (err) {
                     this.showError('Error: ' + err.message);
                 }
             }
+
+            isExcluded(path) {
+                if (this.excluded.size === 0) return false;
+                const normalized = path.endsWith('/') ? path : path + '/';
+                for (const ex of this.excluded) {
+                    if (normalized === ex || normalized.startsWith(ex)) return true;
+                }
+                return false;
+            }
+
+            recomputeVisible() {
+                this.visibleList = this.rawList.filter(p => !this.isExcluded(p));
+                this.tree = this.buildTree(this.visibleList);
+            }
+
+            buildExcludeUI() {
+                const dirs = this.rawList.filter(p => p.endsWith('/'));
+                this.excludeListEl.innerHTML = '';
+
+                if (dirs.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'exclude-empty';
+                    empty.textContent = 'No subfolders found.';
+                    this.excludeListEl.appendChild(empty);
+                    return;
+                }
+
+                const frag = document.createDocumentFragment();
+
+                dirs.forEach(dirPath => {
+                    const cleaned = dirPath.replace(/\/$/, '');
+                    const parts = cleaned.split('/');
+                    const name = parts[parts.length - 1];
+                    const depth = parts.length - 1;
+
+                    const label = document.createElement('label');
+                    label.className = 'exclude-item';
+                    label.title = dirPath;
+
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.checked = this.excluded.has(dirPath);
+                    cb.addEventListener('change', () => {
+                        if (cb.checked) this.excluded.add(dirPath);
+                        else this.excluded.delete(dirPath);
+                        this.recomputeVisible();
+                        this.render(this.rootName || 'root');
+                        this.updateStats();
+                    });
+
+                    const pad = document.createElement('span');
+                    pad.className = 'depth-pad';
+                    pad.style.width = (depth * 10) + 'px';
+
+                    const icon = document.createElement('span');
+                    icon.className = 'folder-icon';
+                    icon.textContent = '▸';
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'label';
+                    nameSpan.textContent = name;
+
+                    label.appendChild(cb);
+                    label.appendChild(pad);
+                    label.appendChild(icon);
+                    label.appendChild(nameSpan);
+                    frag.appendChild(label);
+                });
+
+                this.excludeListEl.appendChild(frag);
+            }
+
             buildTree(paths) {
                 const tree = {};
                 paths.forEach(path => {
@@ -407,6 +622,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
                 });
                 return tree;
             }
+
             generateTree(node, prefix = '', hasSibling = false) {
                 let output = '';
                 const entries = Object.entries(node).sort(([,a], [,b]) => {
@@ -416,73 +632,94 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
 
                 entries.forEach(([key, item], idx) => {
                     const isLastItem = idx === entries.length - 1;
-        
-                    // Determine the prefix for THIS line's branch symbol
                     const linePrefix = prefix + (isLastItem ? '└── ' : '├── ');
-        
-                    // Add the current item with its line prefix
                     output += linePrefix + item.name + (item.isDir ? '/' : '') + '\n';
 
-                    // If this is a directory with children, generate them
                     if (item.isDir && Object.keys(item.children).length > 0) {
-                        // For children: 
-                        // - If current item is NOT the last sibling, continue the vertical bar
-                        // - If current item IS the last sibling, use spaces (no vertical bar)
                         const childPrefix = prefix + (isLastItem ? '    ' : '│   ');
-            
                         output += this.generateTree(item.children, childPrefix, !isLastItem);
                     }
                 });
 
                 return output;
             }
+
             render(rootName = 'root') {
                 if (!this.tree || !Object.keys(this.tree).length) {
-                    this.outputEl.textContent = '(empty directory)';
+                    this.fullText = '(empty directory)';
+                    this.outputEl.textContent = this.fullText;
                     return;
                 }
-                const treeStr = rootName + '/\n' + this.generateTree(this.tree);
-                this.outputEl.textContent = treeStr;
+                this.fullText = rootName + '/\n' + this.generateTree(this.tree);
+                this.outputEl.textContent = this.fullText;
+                this.fitToWidth();
             }
+
+            fitToWidth() {
+                if (!this.fullText) return;
+
+                const containerW = this.outputEl.clientWidth;
+                if (containerW <= 0) return;
+
+                const probe = this.probeEl;
+                probe.style.font = getComputedStyle(this.outputEl).font;
+                const probeW = probe.getBoundingClientRect().width;
+                const charW = probeW / probe.textContent.length;
+                if (!charW || !isFinite(charW)) return;
+
+                const maxChars = Math.max(1, Math.floor(containerW / charW));
+
+                const lines = this.fullText.split('\n');
+                const outLines = lines.map(line => {
+                    if (line.length <= maxChars) return line;
+                    return line.slice(0, maxChars - 1) + '…';
+                });
+
+                this.outputEl.textContent = outLines.join('\n');
+            }
+
             updateStats() {
-                const folders = this.flatList.filter(p => p.endsWith('/')).length;
-                const files = this.flatList.length - folders;
-                this.statsEl.textContent = `${folders} folders • ${files} files`;
+                const folders = this.visibleList.filter(p => p.endsWith('/')).length;
+                const files = this.visibleList.length - folders;
+                const hidden = this.rawList.length - this.visibleList.length;
+                let text = `${folders} folders • ${files} files`;
+                if (hidden > 0) text += ` • ${hidden} hidden`;
+                this.statsEl.textContent = text;
             }
+
             showLoading() {
+                this.fullText = '';
                 this.outputEl.textContent = 'Loading folder structure...';
                 this.outputEl.className = 'structure-output loading';
             }
+
             showError(msg) {
+                this.fullText = '';
                 this.outputEl.textContent = msg;
                 this.outputEl.className = 'structure-output error';
             }
+
             async copyToClipboard() {
-                const text = this.outputEl.textContent.trim();
+                const text = (this.fullText || this.outputEl.textContent).trim();
                 const btn = document.getElementById('copyBtn');
-                const output = this.outputEl;  // shorthand for #structureOutput
+                const output = this.outputEl;
 
                 try {
                     await navigator.clipboard.writeText(text);
 
-                    // Start highlight immediately
                     output.classList.add('highlight-copied', 'flash');
 
-                    // Remove flash after short burst (.5 seconds)
                     setTimeout(() => {
                         output.classList.remove('flash');
                     }, 500);
 
-                    // Button feedback
-                   const orig = btn.textContent;
+                    const orig = btn.textContent;
                     btn.textContent = 'Copied!';
                     btn.classList.add('copied');
 
-                    // Reset everything after .5 seconds
                     setTimeout(() => {
                         btn.textContent = orig;
                         btn.classList.remove('copied');
-                        // Fade out the highlight (transition handles smooth removal)
                         output.classList.remove('highlight-copied');
                     }, 500);
 
@@ -491,6 +728,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'getStructure') {
                 }
             }
         }
+
         document.addEventListener('DOMContentLoaded', () => new FolderStructure());
     </script>
 </body>
